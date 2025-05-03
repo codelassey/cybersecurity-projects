@@ -10,7 +10,8 @@
 
 This capstone project documents a penetration testing skills assessment conducted on networks in a `controlled lab environment`. The exercise comprised four challenges: SQL Injection, Web Server Vulnerabilities, SMB Server Vulnerabilities, and PCAP Analysis. The objectives were to identify vulnerabilities, execute exploits, retrieve flag files containing challenge codes, and propose remediation strategies. This README provides a detailed account of the methodology, tools, findings, and lessons learned, serving as a comprehensive report for my learning journey.
 
-
+### New to These Concepts?
+I created a [Beginner-Friendly Guide](./beginner_friendly/README.md) just for you.
 
 ### Key Objectives
 
