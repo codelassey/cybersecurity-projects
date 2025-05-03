@@ -98,7 +98,7 @@ If you're a beginner, start by:
 ## Link to the Full Technical Report
 
 For intermediate/advanced readers, check out the full detailed report here:  
-**[Cisco Ethical Hacker Capstone Report](./README.md)**
+**[Cisco Ethical Hacker Capstone Report](../README.md)**
 
 ---
 
