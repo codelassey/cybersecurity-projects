@@ -54,185 +54,148 @@ The project was executed in a controlled lab environment using a Kali Linux virt
 
 - **Detailed Steps**:
 
-  1. **Preliminary Setup**:
+1. **Preliminary Setup**:
 
-     <p align="center">
+<img src="images/login_dvwa.png"/>
 
-  <img src="images/login_dvwa.png" width="300"/>
+- Navigated to `http://10.5.5.12` using Firefox on Kali Linux.
 
-     </p>
-     - Navigated to `http://10.5.5.12` using Firefox on Kali Linux.
+- Logged into DVWA with credentials `admin/password`.
 
-     - Logged into DVWA with credentials `admin/password`.
+- Accessed the DVWA Security page, set the security level to `Low`, and submitted the change.
 
-     - Accessed the DVWA Security page, set the security level to `Low`, and submitted the change.
-
-     - Verified the security level update in the DVWA interface.
+- Verified the security level update in the DVWA interface.
 
 
 
-  3. **Confirming SQL Injection Vulnerability**:
+2. **Confirming SQL Injection Vulnerability**:
 
-     - Navigated to the SQL Injection module at `http://10.5.5.12/vulnerabilities/sqli/`.
+- Navigated to the SQL Injection module at `http://10.5.5.12/vulnerabilities/sqli/`.
 
-     - Entered the payload `' OR 1=1 #` in the User ID field and clicked Submit.
+- Entered the payload `' OR 1=1 #` in the User ID field and clicked Submit.
 
-     - Observed the output displaying all user records:
-
-
-
-       <p align="center">
-
-  <img src="images/first_injection.png" width="300" alt="Confirming SQL Injection vulnerability by retrieving all user records"/>
-
-  </p>
+- Observed the output displaying all user records:
 
 
+<img src="images/first_injection.png" alt="Confirming SQL Injection vulnerability by retrieving all user records"/>
 
-     - **Explanation**: The payload `' OR 1=1 #` appends an always-true condition, bypassing the ID check, and `#` comments out trailing query parts, returning all `users` table records.
+
+- **Explanation**: The payload `' OR 1=1 #` appends an always-true condition, bypassing the ID check, and `#` comments out trailing query parts, returning all `users` table records.
 
 
 
      
+3. **Determining Number of Fields**:
 
+- I entered `1' ORDER BY 1 #`, `1' ORDER BY 2 #`, and `1' ORDER BY 3 #` in the User ID field.
 
+- The first two returned normal responses; the third returned an error: `Unknown column '3' in 'order clause'`.
 
-  3. **Determining Number of Fields**:
-
-     - I entered `1' ORDER BY 1 #`, `1' ORDER BY 2 #`, and `1' ORDER BY 3 #` in the User ID field.
-
-     - The first two returned normal responses; the third returned an error: `Unknown column '3' in 'order clause'`.
-
-     - **Explanation**: The `ORDER BY` tests revealed the query involves two fields.
+- **Explanation**: The `ORDER BY` tests revealed the query involves two fields.
 
        
 
+4. **Checking DBMS Version**:
+
+- Entered `1' OR 1=1 UNION SELECT 1, VERSION()#` and observed:
+
+<img src="images/union_select_version.png"/>
 
 
-  4. **Checking DBMS Version**:
-
-     - Entered `1' OR 1=1 UNION SELECT 1, VERSION()#` and observed:
-
-
-
-       <p align="center">
-
-  <img src="images/union_select_version.png" width="300"/>
-
-  </p>
+- **Explanation**: The `output` indicates that the DBMS is MySQL version 5.5.58 running on Debian.
 
 
 
-     - **Explanation**: The `output` indicates that the DBMS is MySQL version 5.5.58 running on Debian.
+5. **Determining Database Name**:
+
+- I entered `1' OR 1=1 UNION SELECT 1, DATABASE()#` and observed:
+
+
+<img src="images/union_select_database.png"/>
+
+
+- **Explanation**: The `DATABASE()` function identified the database as `dvwa`.
 
 
 
-  5. **Determining Database Name**:
+6. **Retrieving Table Names**:
 
-     - I entered `1' OR 1=1 UNION SELECT 1, DATABASE()#` and observed:
+- I entered `1' OR 1=1 UNION SELECT 1, table_name FROM information_schema.tables WHERE table_type='base table' AND table_schema='dvwa'#`.
 
-
-
-       <p align="center">
-
-  <img src="images/union_select_database.png" width="300"/>
-
-  </p>
+- Observed:
 
 
+<img src="images/tables.png"/>
 
-     - **Explanation**: The `DATABASE()` function identified the database as `dvwa`.
+
+- **Findings**: Identified `guestbook` and `users` tables; prioritized `users` for credentials.
 
 
 
-  6. **Retrieving Table Names**:
+7. **Retrieving Column Names**:
 
-     - I entered `1' OR 1=1 UNION SELECT 1, table_name FROM information_schema.tables WHERE table_type='base table' AND table_schema='dvwa'#`.
+- I entered `1' OR 1=1 UNION SELECT 1, column_name FROM information_schema.columns WHERE table_name='users'#`.
 
-     - Observed:
+- Identified columns: User accounts
 
-
-
-       <p align="center">
-
-  <img src="images/tables.png" width="300"/>
-
-  </p>
-
-
-
-     - **Findings**: Identified `guestbook` and `users` tables; prioritized `users` for credentials.
-
-
-
-  7. **Retrieving Column Names**:
-
-     - I entered `1' OR 1=1 UNION SELECT 1, column_name FROM information_schema.columns WHERE table_name='users'#`.
-
-     - Identified columns: User accounts
-
-     - **Findings**: Focused on `user` and `password` column for credential extraction.
+- **Findings**: Focused on `user` and `password` column for credential extraction.
        
-     <p align="center"> <img src="images/column.png" width="300" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/> </p>
+<img src="images/column.png" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/>
 
 
 
-  8. **Retrieving User Credentials**:
+8. **Retrieving User Credentials**:
 
-     - I entered `1' OR 1=1 UNION SELECT user, password FROM users #` and observed:
-     <p align="center"><img src="images/users.png" width="300" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/> </p>
+- I entered `1' OR 1=1 UNION SELECT user, password FROM users #` and observed:
 
-     - **Findings**: Retrieved Bob Smith’s username (`smithy`) and MD5 hash.
+<img src="images/users.png" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/>
 
-
-
-  9. **Cracking Bob Smith’s Password**:
-
-     - I Identified hashes as MD5 (32-character hexadecimal).
-
-     - I navigated to `https://crackstation.net`, pasted Bob Smith’s hash, and clicked “Crack Hashes”.
-
-     - I retrieved the plaintext password as ‘password’
-
-     <p align="center"> <img src="images/crackstation.png" width="300" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/> </p>
+- **Findings**: Retrieved Bob Smith’s username (`smithy`) and MD5 hash.
 
 
 
-     - **Cracking Explanation**:
+9. **Cracking Bob Smith’s Password**:
 
-       - CrackStation uses precomputed rainbow tables to match MD5 hashes to common passwords.
+- I Identified hashes as MD5 (32-character hexadecimal).
 
-       - The instant result indicated a weak password, typical in low-security settings.
+- I navigated to `https://crackstation.net`, pasted Bob Smith’s hash, and clicked “Crack Hashes”.
 
-       - Verified the password by logging into DVWA with `smithy:<password>`.
+- I retrieved the plaintext password as ‘password’
 
-       <p align="center"> <img src="images/logged_in.png" width="300" alt="Successful login to DVWA as Bob Smith"/> </p>
+<img src="images/crackstation.png" alt="Retrieving usernames and password hashes, including Bob Smith’s, via SQL injection"/>
+
+
+- **Cracking Explanation**:
+
+  - CrackStation uses precomputed rainbow tables to match MD5 hashes to common passwords.
+
+  - The instant result indicated a weak password, typical in low-security settings.
+
+  - Verified the password by logging into DVWA with `smithy:<password>`.
+
+
+<img src="images/logged_in.png" alt="Successful login to DVWA as Bob Smith"/> 
 
 
 
-  10. **Accessing the Challenge File**:
+10. **Accessing the Challenge File**:
 
-      - Used `smithy:<password>` to SSH into `192.168.0.10`:
+- Used `smithy:<password>` to SSH into `192.168.0.10`:
 
-        ```bash
+```
+ssh smithy@192.168.0.10
+```
 
-        ssh smithy@192.168.0.10
+- Navigated to `/home/smithy`, located `my_passwords.txt`:
 
-        ```
+```
+ls
+my_passwords.txt
+```
 
-      - Navigated to `/home/smithy`, located `my_passwords.txt`:
+- I cat the file content and recorded the challenge code.
 
-        ```bash
-
-        ls
-
-        my_passwords.txt
-
-        ```
-
-      - I cat the file content and recorded the challenge code.
-
-      <p align="center"> <img src="images/flag1.png" width="300" alt="Accessing Flag 1"/> </p>
+<img src="images/flag1.png" width="300" alt="Accessing Flag 1"/>
 
 
 
@@ -242,33 +205,31 @@ The project was executed in a controlled lab environment using a Kali Linux virt
 
 - **Steps**:
 
-  1. **Preliminary Setup**:
+1. **Preliminary Setup**:
 
      - Logged into `http://10.5.5.12` with `admin/password` and set DVWA security to `low`.
 
-  2. **Reconnaissance**:
+2. **Reconnaissance**:
 
-     - Ran `dirb` to scan directories:
+  - Ran `dirb` to scan directories:
 
-       ```bash
-
+       ```
        dirb http://10.5.5.12 -o dirb_output.txt
 
        ```
 
-     - Identified directories with indexing enabled (`/config/`, `/docs/`, `/external/`) :
+  - Identified directories with indexing enabled (`/config/`, `/docs/`, `/external/`) :
 
-     <p align="center"> <img src="images/dirb.png" width="300”/> </p>
+<img src="images/dirb.png"/>
+
+  - Iccessed all directories in the browser to confirm file listings.
+
+<img src="images/dirb_list.png" alt="Directory indexing vulnerability exposing files on `10.5.5.12`."/> 
 
 
-     - Iccessed all directories in the browser to confirm file listings.
+  - The flag file was `db_form.html` found in `/config/`
 
-     <p align="center"> <img src="images/dirb_list.png" width="300" alt="Directory indexing vulnerability exposing files on `10.5.5.12`."/> </p>
-
-
-     - The flag file was ‘db_form.html’ found in ‘/config/‘
-
-     <p align="center"> <img src="images/flag2.png" width="300" alt="flag 2."/> </p>
+<img src="images/flag2.png" alt="flag 2."/>
 
    
 
@@ -280,84 +241,65 @@ The project was executed in a controlled lab environment using a Kali Linux virt
 
 - **Detailed Steps**:
 
-  1. **Network Scanning with Nmap**:
+1. **Network Scanning with Nmap**:
 
-     - Scanned the `10.5.5.0/24` network to identify hosts with SMB services (port 139 & 445):
+  - Scanned the `10.5.5.0/24` network to identify hosts with SMB services (port 139 & 445):
 
+<img src="images/nmap.png" alt="flag 2."/>
 
+  - **Explanation**: The `-p 139,445` targets the SMB port, `-sV` finds SMB Service and its version.
 
-     <p align="center"> <img src="images/nmap.png" width="300" alt="flag 2."/> </p>
-
-
-
-     - **Explanation**: The `-p 139,445` targets the SMB port, `-sV` finds SMB Service and its version.
-
-     - **Findings**: Identified potential SMB host (`10.5.5.14`) with opened ports 139 and 445 which suggests that the target system is capable of file sharing, potentially exposing it to various vulnerabilities.
+  - **Findings**: Identified potential SMB host (`10.5.5.14`) with opened ports 139 and 445 which suggests that the target system is capable of file sharing, potentially exposing it to various vulnerabilities.
 
 
+2. **SMB Enumeration with enum4linux**:
+
+  - I utilized `enum4linux` which is `an information gathering tool` in enumerating shares on the target machine. `10.5.5.14`:
+
+<img src="images/shares.png" alt="Scanning `10.5.5.0/24` for SMB targets using Nmap."/>
 
 
-  2. **SMB Enumeration with enum4linux**:
+  - **Explanation**: The `-S` option performs share listings.
 
-     - I utilized `enum4linux` which is `an information gathering tool` in enumerating shares on the target machine. `10.5.5.14`:
+  - **Findings**: Identified four shares of which `workfiles` and `print$` were accessible without a valid user login.
 
-     <p align="center"> <img src="images/shares.png" width="300" alt="Scanning `10.5.5.0/24` for SMB targets using Nmap."/> </p>
+3. **Accessing Shares with smbclient**:
 
+  - Listed shares on `target`:
 
+    ```
+    smbclient -L //10.5.5.14
+    ```
 
-     - **Explanation**: The `-S` option performs share listings.
+  - **Findings**: Confirmed the `print$` share was accessible without credentials.
 
-     - **Findings**: Identified four shares of which `workfiles` and `print$` were accessible without a valid user login.
+  - Connected to the `print$` share:
 
-  3. **Accessing Shares with smbclient**:
-
-     - Listed shares on `target`:
-
-       ```bash
-
-       smbclient -L //10.5.5.14
-
-       ```
-
-     - **Findings**: Confirmed the `print$` share was accessible without credentials.
-
-     - Connected to the `print$` share:
-
-       ```bash
-
+    ```
        smbclient //10.5.5.14/print$/OTHER
+    ```
 
-       ```
+  - Listed files and downloaded `sxij42.txt`:
 
-     - Listed files and downloaded `sxij42.txt`:
+    ```
+    ls
+    get sxij42.txt
+    ```
 
-       ```bash
+  - Viewed the file locally:
 
-       ls
+     ```
+     cat sxij42.txt
+     ```
 
-       get sxij42.txt
+  - **Explanation**: The anonymous access indicated a misconfiguration, allowing retrieval of the 3rd challenge code.
 
-       ```
-
-     - Viewed the file locally:
-
-       ```bash
-
-       cat sxij42.txt
-
-       ```
-
-     - **Explanation**: The anonymous access indicated a misconfiguration, allowing retrieval of the 3rd challenge code.
-
-     <p align="center"> <img src="images/flag3.png" width="300" alt="Enumerating and accessing the `public` SMB share on `10.5.5.14` to retrieve the flag file."/> </p>
+<img src="images/flag3.png" alt="Enumerating and accessing the `public` SMB share on `10.5.5.14` to retrieve the flag file."/>
 
       
+4. **Remediation Research**:
 
-
-
-  4. **Remediation Research**:
-
-     - I proposed methods to secure SMB services.
+   - I proposed methods to secure SMB services.
 
 
 
@@ -367,35 +309,30 @@ The project was executed in a controlled lab environment using a Kali Linux virt
 
 - **Steps**:
 
-  1. **PCAP Analysis**:
+1. **PCAP Analysis**:
 
-     - Opened `SA.pcap` in Wireshark:
+  - Opened `SA.pcap` in Wireshark:
 
-       ```bash
+    ```
+    wireshark /home/kali/Downloads/SA.pcap &
+    ```
 
-       wireshark /home/kali/Downloads/SA.pcap &
+  - Applied an HTTP filter:
+    ```
+    http
+    ```
 
-       ```
+  - Identified the target IP (`10.5.5.11`) and other URLs from which the  URL (`http://10.5.5.11/data`) contained the challenge file when checked.
 
-     - Applied an HTTP filter:
+2. **Directory Investigation**:
 
-       ```
+  - Visited the URL in the browser to retrieve the Challenge 4 code.
 
-       http
+  - Explored two files it contained to realize `/user_accounts.xlm/` contained the 4th challenge code.
 
-       ```
+3. **Remediation Research**:
 
-     - Identified the target IP (`10.5.5.11`) and other URLs from which the  URL (`http://10.5.5.11/data`) contained the challenge file when checked.
-
-  2. **Directory Investigation**:
-
-     - Visited the URL in the browser to retrieve the Challenge 4 code.
-
-     - Explored two files it contained to realize `/user_accounts.xlm/`) contained the 4th challenge code.
-
-  3. **Remediation Research**:
-
-     - I proposed methods to prevent clear-text transmission and unauthorized access.
+  - I proposed methods to prevent clear-text transmission and unauthorized access.
 
      
 
