@@ -585,8 +585,8 @@ A PDF file (Job_Infomation.pdf) immediately opens after execution. This serves a
 
   - All files were written by pythonw.exe, confirming the EXE extracted and deployed a complete Python 3.10 runtime environment into the **C:\ProgramData\Zhujikdo\** directory.
 
-![Process Monitor filtered to show file writes by pythonw.exe](images/proc1.img)  
-![Process Monitor filtered to show file writes by pythonw.exe](images/proc2.img)
+![Process Monitor filtered to show file writes by pythonw.exe](images/proc1.png)  
+![Process Monitor filtered to show file writes by pythonw.exe](images/proc2.png)
 
 ---
 
